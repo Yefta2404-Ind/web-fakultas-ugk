@@ -3,36 +3,60 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\Admin\FacultyController;
-use App\Http\Controllers\Admin\FacultySectionController;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
+// SUPER ADMIN
+use App\Http\Controllers\SuperAdmin\FacultyController as SuperFacultyController;
+use App\Http\Controllers\SuperAdmin\AdminUserController;
 
-Route::post('/admin/login', [AuthController::class, 'login']);
+// FACULTY ADMIN
+use App\Http\Controllers\FacultyAdmin\SectionController;
+use App\Http\Controllers\FacultyAdmin\ProgramController;
+use App\Http\Controllers\FacultyAdmin\LecturerController;
+use App\Http\Controllers\FacultyAdmin\FacilityController;
+use App\Http\Controllers\FacultyAdmin\AchievementController;
+use App\Http\Controllers\FacultyAdmin\NewsController;
 
+// =================== AUTH ===================
+Route::post('/login', [AuthController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function () {
 
-    Route::prefix('admin')->group(function () {
-
-        // CRUD fakultas
-        Route::get('/faculties', [FacultyController::class, 'index']);
-        Route::post('/faculties', [FacultyController::class, 'store']);
-        Route::get('/faculties/{id}', [FacultyController::class, 'show']);
-        Route::put('/faculties/{id}', [FacultyController::class, 'update']);
-        Route::delete('/faculties/{id}', [FacultyController::class, 'destroy']);
-
+    Route::get('/me', function (Request $request) {
+        return $request->user();
     });
 
-});
+    // ============ SUPER ADMIN ROUTES ============
+    Route::middleware('role:superadmin')->prefix('super-admin')->group(function () {
+        Route::apiResource('faculties', SuperFacultyController::class);
+        Route::apiResource('faculty-admins', AdminUserController::class)
+            ->only(['index', 'store', 'destroy']);
+    });
 
-Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
+    // ============ FACULTY ADMIN ROUTES ============
+    Route::middleware('role:admin')->prefix('admin')->group(function () {
+        // Section
+        Route::get('sections', [SectionController::class, 'index']);
+        Route::apiResource('sections', SectionController::class)->except(['index']);
 
-    Route::get('faculties/{faculty_id}/sections', [FacultySectionController::class, 'index']);
-    Route::get('faculties/{faculty_id}/sections/{section_key}', [FacultySectionController::class, 'show']);
-    Route::post('faculties/{faculty_id}/sections/{section_key}', [FacultySectionController::class, 'upsert']);
-    Route::delete('faculties/{faculty_id}/sections/{section_key}', [FacultySectionController::class, 'destroy']);
+        // Program
+        Route::get('programs', [ProgramController::class, 'index']);
+        Route::apiResource('programs', ProgramController::class)->except(['index']);
+
+        // Lecturer
+        Route::get('lecturers', [LecturerController::class, 'index']);
+        Route::apiResource('lecturers', LecturerController::class)->except(['index']);
+
+        // Facility
+        Route::get('facilities', [FacilityController::class, 'index']);
+        Route::apiResource('facilities', FacilityController::class)->except(['index']);
+
+        // Achievement
+        Route::get('achievements', [AchievementController::class, 'index']);
+        Route::apiResource('achievements', AchievementController::class)->except(['index']);
+
+        // News
+        Route::get('news', [NewsController::class, 'index']);
+        Route::apiResource('news', NewsController::class)->except(['index']);
+    });
 
 });
